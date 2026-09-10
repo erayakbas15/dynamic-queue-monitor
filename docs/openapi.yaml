@@ -1,0 +1,212 @@
+openapi: 3.0.3
+
+info:
+  title: Dynamic Queue Monitor API
+  version: 1.0.0
+  description: REST API for managing and monitoring Sender and Receiver threads.
+
+servers:
+  - url: http://localhost:8080
+
+paths:
+  /api/system/start:
+    post:
+      summary: Start the system
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartSystemRequest'
+      responses:
+        '200':
+          description: System started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStatus'
+
+  /api/system/stop:
+    post:
+      summary: Stop all workers
+      responses:
+        '200':
+          description: System stopped successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStatus'
+
+  /api/threads/add:
+    post:
+      summary: Add new Sender or Receiver workers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddThreadsRequest'
+      responses:
+        '200':
+          description: Workers added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStatus'
+
+  /api/threads/{type}/stop:
+    post:
+      summary: Stop all workers of a selected type
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/WorkerType'
+      responses:
+        '200':
+          description: Worker group stopped successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStatus'
+
+  /api/threads/{type}/{id}/priority:
+    patch:
+      summary: Change worker thread priority
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/WorkerType'
+
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: sender-1
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePriorityRequest'
+
+      responses:
+        '200':
+          description: Priority changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStatus'
+
+  /api/status:
+    get:
+      summary: Get the latest system status
+      responses:
+        '200':
+          description: Current queue and thread status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStatus'
+
+components:
+  schemas:
+
+    WorkerType:
+      type: string
+      enum:
+        - SENDER
+        - RECEIVER
+
+    StartSystemRequest:
+      type: object
+      required:
+        - senderCount
+        - receiverCount
+        - queueCapacity
+      properties:
+        senderCount:
+          type: integer
+          minimum: 0
+          example: 3
+        receiverCount:
+          type: integer
+          minimum: 0
+          example: 2
+        queueCapacity:
+          type: integer
+          minimum: 1
+          example: 10
+
+    AddThreadsRequest:
+      type: object
+      required:
+        - type
+        - count
+      properties:
+        type:
+          $ref: '#/components/schemas/WorkerType'
+        count:
+          type: integer
+          minimum: 1
+          example: 2
+
+    ChangePriorityRequest:
+      type: object
+      required:
+        - priority
+      properties:
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 10
+          example: 8
+
+    QueueStatus:
+      type: object
+      properties:
+        size:
+          type: integer
+          example: 5
+        capacity:
+          type: integer
+          example: 10
+        occupancyPercentage:
+          type: number
+          format: double
+          example: 50.0
+
+    StateCounts:
+      type: object
+      properties:
+        RUNNABLE:
+          type: integer
+          format: int64
+          example: 2
+        WAITING:
+          type: integer
+          format: int64
+          example: 1
+        BLOCKED:
+          type: integer
+          format: int64
+          example: 0
+        TERMINATED:
+          type: integer
+          format: int64
+          example: 0
+
+    SystemStatus:
+      type: object
+      properties:
+        queue:
+          $ref: '#/components/schemas/QueueStatus'
+        senders:
+          $ref: '#/components/schemas/StateCounts'
+        receivers:
+          $ref: '#/components/schemas/StateCounts'
