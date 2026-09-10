@@ -70,4 +70,22 @@ public abstract class AbstractWorker implements Runnable {
     public boolean isRunning() {
         return running;
     }
+
+    public synchronized void setPriority(int priority) {
+        if (priority < Thread.MIN_PRIORITY || priority > Thread.MAX_PRIORITY) {
+            throw new IllegalArgumentException("Priority must be between 1 and 10");
+        }
+
+        if (thread != null) {
+            thread.setPriority(priority);
+        }
+    }
+
+    public int getPriority() {
+        if (thread == null) {
+            return Thread.NORM_PRIORITY;
+        }
+
+        return thread.getPriority();
+    }
 }

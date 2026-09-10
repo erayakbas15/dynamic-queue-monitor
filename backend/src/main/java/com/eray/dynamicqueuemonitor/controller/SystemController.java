@@ -1,12 +1,14 @@
 package com.eray.dynamicqueuemonitor.controller;
 
 import com.eray.dynamicqueuemonitor.dto.AddThreadsRequest;
+import com.eray.dynamicqueuemonitor.dto.ChangePriorityRequest;
 import com.eray.dynamicqueuemonitor.dto.StartSystemRequest;
 import com.eray.dynamicqueuemonitor.dto.SystemStatusResponse;
 import com.eray.dynamicqueuemonitor.model.WorkerType;
 import com.eray.dynamicqueuemonitor.service.ThreadManagerService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
+
 
 @RestController
 @RequestMapping("/api")
@@ -52,6 +54,17 @@ public class SystemController {
             @PathVariable WorkerType type) {
 
         threadManager.stopWorkers(type);
+
+        return threadManager.getStatus();
+    }
+
+    @PatchMapping("/threads/{type}/{id}/priority")
+    public SystemStatusResponse changePriority(
+            @PathVariable WorkerType type,
+            @PathVariable String id,
+            @Valid @RequestBody ChangePriorityRequest request) {
+
+        threadManager.changePriority(type, id, request.priority());
 
         return threadManager.getStatus();
     }

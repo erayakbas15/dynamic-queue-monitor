@@ -109,6 +109,26 @@ public class ThreadManagerService {
         updateMetrics();
     }
 
+    public synchronized void changePriority(
+            WorkerType type,
+            String workerId,
+            int priority) {
+
+        AbstractWorker worker;
+
+        if (type == WorkerType.SENDER) {
+            worker = senders.get(workerId);
+        } else {
+            worker = receivers.get(workerId);
+        }
+
+        if (worker == null) {
+            throw new IllegalArgumentException("Worker not found: " + workerId);
+        }
+
+        worker.setPriority(priority);
+    }
+
     @Scheduled(fixedRate = 1000)
     public void updateMetrics() {
         latestStatus = buildStatus();

@@ -9,6 +9,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -73,5 +74,19 @@ class SystemControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.senders.RUNNABLE").value(3));
+    }
+
+    @Test
+    void shouldChangeWorkerPriority() throws Exception {
+        threadManager.startSystem(1, 0, 5);
+
+        mockMvc.perform(patch("/api/threads/SENDER/sender-1/priority")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "priority": 8
+                                }
+                                """))
+                .andExpect(status().isOk());
     }
 }
