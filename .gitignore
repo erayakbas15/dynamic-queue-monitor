@@ -1,10 +1,10 @@
 # Java
-target/
+**/target/
 *.class
 
 # Node
-node_modules/
-dist/
+**/node_modules/
+**/dist/
 
 # IDE
 .idea/
