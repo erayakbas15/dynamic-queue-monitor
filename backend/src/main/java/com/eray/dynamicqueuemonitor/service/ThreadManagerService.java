@@ -7,6 +7,7 @@ import com.eray.dynamicqueuemonitor.queue.BoundedQueue;
 import com.eray.dynamicqueuemonitor.worker.AbstractWorker;
 import com.eray.dynamicqueuemonitor.worker.ReceiverWorker;
 import com.eray.dynamicqueuemonitor.worker.SenderWorker;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
@@ -25,8 +26,17 @@ public class ThreadManagerService {
     private final AtomicInteger receiverCounter = new AtomicInteger();
 
     private volatile BoundedQueue<String> queue = new BoundedQueue<>(10);
+    private volatile SystemStatusResponse latestStatus;
 
-    public synchronized void startSystem(int senderCount, int receiverCount, int queueCapacity) {
+    public ThreadManagerService() {
+        updateMetrics();
+    }
+
+    public synchronized void startSystem(
+            int senderCount,
+            int receiverCount,
+            int queueCapacity) {
+
         stopSystem();
 
         senders.clear();
@@ -44,11 +54,15 @@ public class ThreadManagerService {
         if (receiverCount > 0) {
             addWorkers(WorkerType.RECEIVER, receiverCount);
         }
+
+        updateMetrics();
     }
 
     public synchronized void addWorkers(WorkerType type, int count) {
         if (count <= 0) {
-            throw new IllegalArgumentException("Thread count must be greater than zero");
+            throw new IllegalArgumentException(
+                    "Thread count must be greater than zero"
+            );
         }
 
         for (int i = 0; i < count; i++) {
@@ -58,6 +72,8 @@ public class ThreadManagerService {
                 addReceiver();
             }
         }
+
+        updateMetrics();
     }
 
     private void addSender() {
@@ -82,14 +98,27 @@ public class ThreadManagerService {
         } else {
             receivers.values().forEach(AbstractWorker::stopWorker);
         }
+
+        updateMetrics();
     }
 
     public synchronized void stopSystem() {
         senders.values().forEach(AbstractWorker::stopWorker);
         receivers.values().forEach(AbstractWorker::stopWorker);
+
+        updateMetrics();
+    }
+
+    @Scheduled(fixedRate = 1000)
+    public void updateMetrics() {
+        latestStatus = buildStatus();
     }
 
     public SystemStatusResponse getStatus() {
+        return latestStatus;
+    }
+
+    private SystemStatusResponse buildStatus() {
         SystemStatusResponse.QueueStatus queueStatus =
                 new SystemStatusResponse.QueueStatus(
                         queue.size(),
@@ -107,7 +136,8 @@ public class ThreadManagerService {
     private Map<WorkerState, Long> countStates(
             Collection<? extends AbstractWorker> workers) {
 
-        Map<WorkerState, Long> counts = new EnumMap<>(WorkerState.class);
+        Map<WorkerState, Long> counts =
+                new EnumMap<>(WorkerState.class);
 
         for (WorkerState state : WorkerState.values()) {
             counts.put(state, 0L);
